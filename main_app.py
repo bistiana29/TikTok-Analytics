@@ -10,11 +10,11 @@ from streamlit_option_menu import option_menu
 
 from src.scraping.video_scraping import scrape_videos
 from src.cleaning.video_cleaning import clean_video_df
-from src.anlysis.engagement import authors_videos, likes_analysis, comment_analysis, share_analysis, saved_analysis, views_analysis, duration_analysis, videos_over_time
+from src.anlysis.engagement import authors_videos, likes_analysis, comment_analysis, share_analysis, saved_analysis, views_analysis, duration_analysis, videos_over_time, likes_over_time
 
 # Setup halaman utama
 st.set_page_config(
-    page_title="TikTok Analytics",
+    page_title="I'm Ticky🤗",
     page_icon="🎵",
     layout="wide"
 )
@@ -40,7 +40,7 @@ st.markdown("""
 
     /* Judul Sidebar */
     .sidebar-title {
-        font-size: 28px;
+        font-size: 18px;
         font-weight: bold;
         color: #FFFFFF;
         text-align: center;
@@ -88,7 +88,7 @@ if "selected_page" not in st.session_state:
     st.session_state["selected_page"] = "Home"
 
 with st.sidebar:
-    st.markdown('<div class="sidebar-title">TikTok Analytics</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-title">TikTok Analytics and Keyword Insight</div>', unsafe_allow_html=True)
 
     selected = option_menu(
         menu_title=None,
@@ -129,7 +129,7 @@ if selected == "Home":
     with col1:
         st.markdown("""
             <h1 style="font-size:40px; margin-bottom:0;">
-                Hi! Miggy here 🤗
+                Hi! Ticky here 🤗
             </h1>
             <p style="font-size:20px; color:#555;">
                 Ready to analyze your TikTok keywords. Enter your Apify token and keyword or hashtag to get started!
@@ -141,6 +141,9 @@ if selected == "Home":
 
     # User input di HALAMAN, bukan sidebar
     token = st.text_input("🔑 Apify Token", type="password")
+    if token:
+        st.session_state['api_token'] = token
+
     hashtag = st.text_input("🏷️ Hashtag or Keyword", placeholder="e.g., mbg, skincare, ruu")
     limit = st.slider("📦 Number of Videos", 10, 700, 50)
 
@@ -151,13 +154,12 @@ if selected == "Home":
             st.warning("Please enter both token and hashtag first.")
             st.stop()
 
-        with st.spinner("Processing..."):
+        with st.spinner("Scraping TikTok data..."):
             df_raw = scrape_videos(token, hashtag, limit)
             df = clean_video_df(df_raw)
 
         st.session_state["video_df"] = df
-
-        st.success("Processing complete!")
+        st.success(f"Scraping selesai! Total video: {len(df)}")
 
         # Directly navigate to Page 2
         st.session_state["selected_page"] = "Engagement Analysis"
@@ -186,8 +188,61 @@ elif selected == "Engagement Analysis":
     with col2:
         st.image(IMG_PATH, use_column_width=True)
 
+    col3, col4, col5 = st.columns(3)
+    with col3:
+        # Card total videos
+        total_videos = len(df)
+        st.markdown(f"""
+        <style>
+        .metric-card {{
+            background-color: #11224E;  /* warna card */
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+        }}
+        .metric-label {{
+            font-size: 16px;
+            opacity: 0.7;
+        }}
+        .metric-value {{
+            font-size: 28px;
+            font-weight: bold;
+            margin-top: 5px;
+        }}
+        </style>
+        <div class="metric-card">
+            <div class="metric-label">Total Videos</div>
+            <div class="metric-value">{total_videos}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col4:
+        # Card total authors
+        total_authors = df['authorMeta.name'].nunique()
+        st.markdown(f"""
+        <div class="metric-card" style="background-color: #11224E;">
+            <div class="metric-label">Total Authors</div>
+            <div class="metric-value">{total_authors}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col5:
+        # Card total days covered
+        total_days = (df['createTimeISO'].max() - df['createTimeISO'].min()).days + 1
+        st.markdown(f"""
+        <div class="metric-card" style="background-color: #11224E;">
+            <div class="metric-label">Days Covered</div>
+            <div class="metric-value">{total_days}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
     # grafik
     st.plotly_chart(videos_over_time(df), use_container_width=True)
+    st.plotly_chart(likes_over_time(df), use_container_width=True)
+
     st.plotly_chart(authors_videos(df), use_container_width=True)
     st.plotly_chart(likes_analysis(df), use_container_width=True)
     st.plotly_chart(comment_analysis(df), use_container_width=True)
@@ -217,15 +272,22 @@ elif selected == "Engagement Analysis":
         # Bersihkan nilai inf/nan
         engagement_rate['engagement_rate'] = (engagement_rate['engagement_rate'].replace([np.inf, -np.inf], np.nan).fillna(0).round(2))
         engagement_rate = engagement_rate.sort_values(by='engagement_rate', ascending=False).reset_index(drop=True)
+        engagement_rate["No"] = np.arange(1, len(engagement_rate) + 1)
 
         st.subheader("📊 Engagement Rate Ranking")
         engagement_rate["engagement_rate_for_bar"] = (engagement_rate["engagement_rate"].clip(0, 100))
+
+        columns_to_show = ["No", "authorMeta.name", "webVideoUrl",
+                           "diggCount", "commentCount", "shareCount",
+                            "collectCount", "playCount", "engagement_rate_for_bar"]
         st.dataframe(
-            engagement_rate,
+            engagement_rate[columns_to_show],
             column_config={
+                "No": st.column_config.NumberColumn("No", format="%d"),
+                
                 "engagement_rate_for_bar": st.column_config.ProgressColumn(
                     "Engagement Rate (%)",
-                    help="Total (likes + comments + shares + bookmarks) / views * 100",
+                    help="(likes + comments + shares + bookmarks) / views * 100",
                     format="%.2f",
                     min_value=0,
                     max_value=100.0,
@@ -233,9 +295,10 @@ elif selected == "Engagement Analysis":
                 "engagement_rate": st.column_config.NumberColumn(
                     "Engagement Rate (raw)",
                     format="%.2f",
-                    help="Nilai asli sebelum dipotong (bisa >100%)"
+                    help="Nilai asli sebelum clip (bisa >100%)"
                 ),
             },
+            column_order=columns_to_show,  # Hanya kolom ini yang tampil
             hide_index=True,
             use_container_width=True
         )
@@ -296,7 +359,7 @@ elif selected == "Text Analysis":
     emoji_list = df["emoji"].dropna().astype(str).tolist()
     emoji_list = [e for e in emoji_list if e.strip() != ""]
 
-    st.write("### 😊 Emoji WordCloud")
+    st.write("### 😊 Emoji Caption WordCloud")
 
     if len(emoji_list) == 0:
         st.info("⚠ No emoji found in captions")

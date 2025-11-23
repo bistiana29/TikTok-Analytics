@@ -106,7 +106,7 @@ def authors_videos(df):
             yanchor="bottom",
             y=1.02,
             xanchor="right",
-            x=1
+            x=1,
         )
     )
 
@@ -415,7 +415,6 @@ def share_analysis(df):
         annotation_position="top right"
     )
 
-
     # DROPDOWN MENU
     fig_shares.update_layout(
         updatemenus=[
@@ -533,7 +532,6 @@ def saved_analysis(df):
         annotation_text=f"Mean = {mean_saved:.2f}",
         annotation_position="top right"
     )
-
 
     # DROPDOWN MENU
     fig_saved.update_layout(
@@ -928,7 +926,6 @@ def videos_over_time(df):
         visible=False
     ))
 
-
     # LAST 1 DAY (jam)
     fig_lines.add_trace(go.Scatter(
         x=daily_day['createTimeISO'],
@@ -945,7 +942,6 @@ def videos_over_time(df):
         name=f'Mean 1 Day ({mean_day.round(2)})',
         visible=False
     ))
-
 
     # DROPDOWN MENU
     fig_lines.update_layout(
@@ -976,3 +972,155 @@ def videos_over_time(df):
     )
 
     return fig_lines
+
+def likes_over_time(df):
+    """Analisis like video dari waktu ke waktu (Total Likes per periode)."""
+
+    df['createTimeISO'] = pd.to_datetime(df['createTimeISO'])
+
+    # === Tentukan tanggal terakhir ===
+    latest_date = df['createTimeISO'].max()
+
+    # === Rentang waktu ===
+    three_month = latest_date - pd.Timedelta(days=90)
+    one_month  = latest_date - pd.Timedelta(days=30)
+    one_week   = latest_date - pd.Timedelta(days=7)
+    one_day    = latest_date - pd.Timedelta(days=1)
+
+    # === Filter data ===
+    data_all      = df
+    data_90d      = df[df['createTimeISO'] >= three_month]
+    data_30d      = df[df['createTimeISO'] >= one_month]
+    data_7d       = df[df['createTimeISO'] >= one_week]
+    data_1d       = df[df['createTimeISO'] >= one_day]
+
+    # Resample Likes
+    daily_all  = data_all.resample('D', on='createTimeISO')['diggCount'].sum().reset_index(name='Likes')
+    daily_90d  = data_90d.resample('D', on='createTimeISO')['diggCount'].sum().reset_index(name='Likes')
+    daily_30d  = data_30d.resample('D', on='createTimeISO')['diggCount'].sum().reset_index(name='Likes')
+    daily_7d   = data_7d.resample('D', on='createTimeISO')['diggCount'].sum().reset_index(name='Likes')
+    hourly_1d  = data_1d.resample('H', on='createTimeISO')['diggCount'].sum().reset_index(name='Likes')
+
+    # Mean Likes
+    mean_all  = daily_all['Likes'].mean()
+    mean_90d  = daily_90d['Likes'].mean() if len(daily_90d) else 0
+    mean_30d  = daily_30d['Likes'].mean() if len(daily_30d) else 0
+    mean_7d   = daily_7d['Likes'].mean() if len(daily_7d) else 0
+    mean_1d   = hourly_1d['Likes'].mean() if len(hourly_1d) else 0
+
+    fig_likes_line = go.Figure()
+
+    # ALL TIME
+    fig_likes_line.add_trace(go.Scatter(
+        x=daily_all['createTimeISO'],
+        y=daily_all['Likes'],
+        name='All Time Likes',
+        visible=True
+    ))
+    fig_likes_line.add_trace(go.Scatter(
+        x=[daily_all['createTimeISO'].min(), daily_all['createTimeISO'].max()],
+        y=[mean_all, mean_all],
+        mode='lines',
+        line=dict(dash='dash', color='red'),
+        name=f"Mean All ({mean_all:.2f})",
+        visible=True
+    ))
+
+    # LAST 90 DAYS
+    fig_likes_line.add_trace(go.Scatter(
+        x=daily_90d['createTimeISO'],
+        y=daily_90d['Likes'],
+        name='Last 90 Days Likes',
+        visible=False
+    ))
+    fig_likes_line.add_trace(go.Scatter(
+        x=[daily_90d['createTimeISO'].min(), daily_90d['createTimeISO'].max()] if len(daily_90d) else [None, None],
+        y=[mean_90d, mean_90d],
+        mode='lines',
+        line=dict(dash='dash', color='red'),
+        name=f"Mean 90 Days ({mean_90d:.2f})",
+        visible=False
+    ))
+
+    # LAST 30 DAYS
+    fig_likes_line.add_trace(go.Scatter(
+        x=daily_30d['createTimeISO'],
+        y=daily_30d['Likes'],
+        name='Last 30 Days Likes',
+        visible=False
+    ))
+    fig_likes_line.add_trace(go.Scatter(
+        x=[daily_30d['createTimeISO'].min(), daily_30d['createTimeISO'].max()] if len(daily_30d) else [None, None],
+        y=[mean_30d, mean_30d],
+        mode='lines',
+        line=dict(dash='dash', color='red'),
+        name=f"Mean 30 Days ({mean_30d:.2f})",
+        visible=False
+    ))
+
+    # LAST 7 DAYS
+    fig_likes_line.add_trace(go.Scatter(
+        x=daily_7d['createTimeISO'],
+        y=daily_7d['Likes'],
+        name='Last 7 Days Likes',
+        visible=False
+    ))
+    fig_likes_line.add_trace(go.Scatter(
+        x=[daily_7d['createTimeISO'].min(), daily_7d['createTimeISO'].max()] if len(daily_7d) else [None, None],
+        y=[mean_7d, mean_7d],
+        mode='lines',
+        line=dict(dash='dash', color='red'),
+        name=f"Mean 7 Days ({mean_7d:.2f})",
+        visible=False
+    ))
+
+    # LAST 1 DAY (Hourly)
+    fig_likes_line.add_trace(go.Scatter(
+        x=hourly_1d['createTimeISO'],
+        y=hourly_1d['Likes'],
+        name='Last 24 Hours Likes',
+        visible=False
+    ))
+    fig_likes_line.add_trace(go.Scatter(
+        x=[hourly_1d['createTimeISO'].min(), hourly_1d['createTimeISO'].max()] if len(hourly_1d) else [None, None],
+        y=[mean_1d, mean_1d],
+        mode='lines',
+        line=dict(dash='dash', color='red'),
+        name=f"Mean 24 Hours ({mean_1d:.2f})",
+        visible=False
+    ))
+
+    # DROPDOWN
+    fig_likes_line.update_layout(
+        updatemenus=[
+            dict(
+                buttons=[
+                    dict(label="All Time", 
+                         method="update",
+                         args=[{"visible": [True, True,  False, False, False, False, False, False, False, False]}]),
+
+                    dict(label="Last 90 Days", 
+                         method="update",
+                         args=[{"visible": [False, False, True, True, False, False, False, False, False, False]}]),
+
+                    dict(label="Last 30 Days", 
+                         method="update",
+                         args=[{"visible": [False, False, False, False, True, True, False, False, False, False]}]),
+
+                    dict(label="Last 7 Days", 
+                         method="update",
+                         args=[{"visible": [False, False, False, False, False, False, True, True, False, False]}]),
+
+                    dict(label="Last 24 Hours", 
+                         method="update",
+                         args=[{"visible": [False, False, False, False, False, False, False, False, True, True]}]),
+                ],
+                x=0.1, y=1.15
+            )
+        ],
+        title={'text': "Likes Over Time", 'x': 0.5},
+        xaxis_title="Time",
+        yaxis_title="Total Likes"
+    )
+
+    return fig_likes_line
