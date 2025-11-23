@@ -11,6 +11,7 @@ from streamlit_option_menu import option_menu
 from src.scraping.video_scraping import scrape_videos
 from src.cleaning.video_cleaning import clean_video_df
 from src.anlysis.engagement import authors_videos, likes_analysis, comment_analysis, share_analysis, saved_analysis, views_analysis, duration_analysis, videos_over_time, likes_over_time
+from src.anlysis.keyword_hashtag import hashtags_association
 
 # Setup halaman utama
 st.set_page_config(
@@ -92,9 +93,9 @@ with st.sidebar:
 
     selected = option_menu(
         menu_title=None,
-        options=["Home", "Engagement Analysis", "Text Analysis"],
+        options=["Home", "Engagement", "Keyword and Hashtag"],
         icons=["house", "bar-chart", "chat-dots"],
-        default_index=["Home", "Engagement Analysis", "Text Analysis"].index(st.session_state["selected_page"]),
+        default_index=["Home", "Engagement", "Keyword and Hashtag"].index(st.session_state["selected_page"]),
         orientation="vertical",
         styles={
             "container": {"background-color": "#F87B1B", "padding": "0px"},
@@ -162,10 +163,10 @@ if selected == "Home":
         st.success(f"Scraping selesai! Total video: {len(df)}")
 
         # Directly navigate to Page 2
-        st.session_state["selected_page"] = "Engagement Analysis"
+        st.session_state["selected_page"] = "Engagement"
         st.rerun()
 
-elif selected == "Engagement Analysis":
+elif selected == "Engagement":
     if "video_df" not in st.session_state:
         st.error("⚠ No data available. Please scrape data first on the Home page.")
         st.stop()
@@ -303,7 +304,7 @@ elif selected == "Engagement Analysis":
             use_container_width=True
         )
 
-elif selected == "Text Analysis":
+elif selected == "Keyword and Hashtag":
     if "video_df" not in st.session_state:
         st.error("⚠ No data available. Please scrape data first on the Home page.")
         st.stop()
@@ -318,7 +319,7 @@ elif selected == "Text Analysis":
     with col1:
         st.markdown("""
             <h1 style="font-size:40px; margin-bottom:0;">
-                Text Analysis Dashboard
+                Keyword and Hashtag Analysis
             </h1>
         """, unsafe_allow_html=True)
 
@@ -369,3 +370,14 @@ elif selected == "Text Analysis":
             st.pyplot(generate_wordcloud(emoji_text, "Emoji WordCloud"))
         except ValueError as ve:
             st.warning(f"WordCloud Emoji Failed: {ve}")
+
+    # Analisis Asosiasi Hashtag
+    st.write('### ⛓️ Hashtag Association Network')
+    df_top_pairs, fig_assoc = hashtags_association(df, top_n_pairs=30)
+
+    # tampilkan di Streamlit
+    col3, col4 = st.columns([3,2])
+    with col3:
+        st.plotly_chart(fig_assoc)
+    with col4:
+        st.dataframe(df_top_pairs)

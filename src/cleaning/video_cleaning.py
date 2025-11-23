@@ -1,7 +1,9 @@
 import re
-import emoji
 import pandas as pd
+import emoji
+
 from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer, PorterStemmer
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 
 STOPWORDS = set(stopwords.words("indonesian"))
@@ -16,34 +18,57 @@ def extract_hashtags(text):
 def extract_emoji(text):
     return [c for c in text if c in emoji.EMOJI_DATA]
 
-def clean_caption(text):
+# inisialisasi stemmer dan lemmatizer
+porter = PorterStemmer()
+lemmatizer = WordNetLemmatizer()
+factory = StemmerFactory()
+sastrawi_stemmer = factory.create_stemmer()
+
+# custom stopwords (bisa ditambah sesuai kebutuhan)
+CUSTOM_STOPWORDS_ID = set(['yg','dgn','dr','ke','di','tdk','nih'])
+CUSTOM_STOPWORDS_EN = set(['u','ur','im','ive','lol'])  # contoh tambahan bahasa Inggris
+
+def clean_caption(text, language='id'):
     if pd.isna(text):
         return ""
-
+    
     # lowercase
     text = text.lower()
-
-    # hilangkan hashtag (akan dipisah)
+    
+    # hilangkan hashtag
     text = re.sub(r"#\w+", " ", text)
-
+    
     # hilangkan emoji
     text = emoji.replace_emoji(text, replace=' ')
-
+    
     # hilangkan URL
     text = re.sub(r"http\S+|www.\S+", " ", text)
-
+    
     # hilangkan angka & punctuation
     text = re.sub(r"[^a-zA-Z\s]", " ", text)
-
+    
     # hilangkan extra space
     text = re.sub(r"\s+", " ", text).strip()
-
-    # remove stopwords
+    
+    # pilih stopwords sesuai bahasa
+    if language.lower() == 'id':
+        STOPWORDS_LIB = set(stopwords.words('indonesian'))
+        STOPWORDS = STOPWORDS_LIB.union(CUSTOM_STOPWORDS_ID)
+    else:
+        STOPWORDS_LIB = set(stopwords.words('english'))
+        STOPWORDS = STOPWORDS_LIB.union(CUSTOM_STOPWORDS_EN)
+    
+    # tokenization & remove stopwords
     tokens = [w for w in text.split() if w not in STOPWORDS]
-
-    # stemming
-    tokens = [stemmer.stem(w) for w in tokens]
-
+    
+    # stemming + lemmatization
+    if language.lower() == 'id':
+        tokens = [sastrawi_stemmer.stem(w) for w in tokens]
+        # untuk bahasa Indonesia, lemmatization bisa di-skip karena stemming sudah cukup
+    else:
+        tokens = [porter.stem(w) for w in tokens]
+        tokens = [lemmatizer.lemmatize(w) for w in tokens]
+    
     return " ".join(tokens)
 
 def clean_video_df(df_raw):
