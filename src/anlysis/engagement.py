@@ -6,7 +6,7 @@ from src.cleaning.video_cleaning import clean_video_df
 
 def authors_videos(df):
     """Analisis author dengan video terbanyak dan tersedikit."""
-    # ==================Top & Bottom Authors by Video Count==================
+    # Top & Bottom Authors by Video Count
     all_authors = df['authorMeta.name'].value_counts()
     mean_value = all_authors.mean()
 

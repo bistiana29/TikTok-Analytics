@@ -4,6 +4,9 @@ from collections import Counter
 import networkx as nx
 import plotly.graph_objects as go
 
+# from sentence_transformers import SentenceTransformer
+# from bertopic import BERTopic
+
 def hashtags_association(df, top_n_pairs=30):
     # buat semua pasangan hashtag
     hashtag_pairs = [pair for sublist in df["hashtags"] for pair in combinations(sorted(set(sublist)), 2)]
@@ -71,3 +74,34 @@ def hashtags_association(df, top_n_pairs=30):
                     ))
     
     return df_top.reset_index(), fig
+
+
+
+# def generate_bertopic(df, top_n=5, model_name="indolem/indobert-base-uncased"):
+#     embedder = SentenceTransformer(model_name)
+#     embeddings = embedder.encode(df["text_clean"].tolist(), show_progress_bar=True)
+
+#     # Inisialisasi BERTopic
+#     topic_model = BERTopic(language="indonesian", verbose=True)
+
+#     # Fit transform pada kolom text_clean
+#     topics, probs = topic_model.fit_transform(df["text_clean"], embeddings)
+
+#     # Dapatkan informasi topik
+#     topic_info = topic_model.get_topic_info()
+
+#     print("\n=== TOPIK DITEMUKAN ===")
+#     print(topic_info)
+
+#     # Simpan top_n topik ke dictionary
+#     top_topics_dict = {}
+#     for topic_num in topic_info["Topic"].head(top_n):
+#         if topic_num != -1:  # skip outlier
+#             top_topics_dict[topic_num] = topic_model.get_topic(topic_num)
+#             print(f"\nTopik {topic_num}:")
+#             print(top_topics_dict[topic_num])
+
+#     # Tambahkan kolom topik ke dataframe
+#     df["topic"] = topics
+
+#     return df, topic_info, top_topics_dict

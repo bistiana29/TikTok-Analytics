@@ -25,8 +25,8 @@ factory = StemmerFactory()
 sastrawi_stemmer = factory.create_stemmer()
 
 # custom stopwords (bisa ditambah sesuai kebutuhan)
-CUSTOM_STOPWORDS_ID = set(['yg','dgn','dr','ke','di','tdk','nih'])
-CUSTOM_STOPWORDS_EN = set(['u','ur','im','ive','lol'])  # contoh tambahan bahasa Inggris
+CUSTOM_STOPWORDS_ID = set(['yg','dgn','dr','ke','di','tdk','nih', 'njir', 'dong', 'duh'])
+CUSTOM_STOPWORDS_EN = set(['u','ur','im','ive','lol'])
 
 def clean_caption(text, language='id'):
     if pd.isna(text):

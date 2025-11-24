@@ -381,3 +381,7 @@ elif selected == "Keyword and Hashtag":
         st.plotly_chart(fig_assoc)
     with col4:
         st.dataframe(df_top_pairs)
+
+    # # tabel caption topic modeling
+    # df, topic_info, top_topics = generate_bertopic(df, top_n=5)
+    # st.dataframe(topic_info)
